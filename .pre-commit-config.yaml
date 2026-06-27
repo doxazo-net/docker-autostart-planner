@@ -1,0 +1,43 @@
+# Optional pre-commit framework config (alternate to .githooks).
+# Enable with: pipx install pre-commit && pre-commit install && pre-commit install --hook-type commit-msg
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: check-merge-conflict
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+
+  - repo: local
+    hooks:
+      - id: php-cs-fixer
+        name: php-cs-fixer
+        entry: vendor/bin/php-cs-fixer fix --dry-run --diff
+        language: system
+        types: [php]
+        pass_filenames: false
+      - id: phpstan
+        name: phpstan
+        entry: vendor/bin/phpstan analyse --no-progress
+        language: system
+        types: [php]
+        pass_filenames: false

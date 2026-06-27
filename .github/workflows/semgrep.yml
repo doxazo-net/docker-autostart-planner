@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -30,7 +31,9 @@ jobs:
       - name: Install Semgrep
         run: pipx install semgrep
       - name: Semgrep SAST (PHP + security-audit)
-        # Fails the job on any finding. Tune via .semgrepignore if FPs appear.
-        # When the repo goes public, add --sarif output + upload-sarif to post
-        # findings to the Security tab (needs public repo or GHAS).
-        run: semgrep scan --config p/php --config p/security-audit --error
+        run: semgrep scan --config p/php --config p/security-audit --sarif --output semgrep.sarif
+      - name: Upload SARIF to code scanning
+        uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
