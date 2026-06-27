@@ -51,8 +51,10 @@ Key facts about the mechanism (verified):
 - Connection/port watching (Phase 3, opt-in, off by default).
 - Notifications (Phase 4).
 - Health-gated or active startup (explicitly rejected: no hijacking startup).
-- SBOM / package composition scanning.
-- Managing compose-managed or non-autostart containers.
+- Package-level scanning. Dependencies come from config (and later, connections),
+  not package data.
+- Managing compose-managed containers, or any container not in
+  `unraid-autostart`.
 
 ## Principles
 
@@ -87,8 +89,9 @@ Key facts about the mechanism (verified):
    its prerequisite, sized to that prerequisite's measured readiness.
 5. **Doctor** - lint rules that detect common autostart mistakes and offer
    one-click fixes through the Applier.
-6. **Applier** - writes `unraid-autostart`, always backing up first; writes only
-   `name [wait]` lines (no comments, to stay safe for `rc.docker`).
+6. **Applier** - writes `unraid-autostart` atomically (temp file + rename),
+   always backing up first; writes only `name [wait]` lines (no comments, to
+   stay safe for `rc.docker`).
 7. **State / drift tracker** - snapshots `unraid-autostart` and the last applied
    deck; detects external modification (GUI edits, new/removed containers) and
    surfaces a diff for reconciliation.
@@ -105,8 +108,13 @@ All plugin data lives on flash so it survives a docker image rebuild:
 - `deps.json` - dependency edges: `{from, to, type: hard|soft, source:
   detected|user}`. (Phase 2 adds `source: preset`.)
 - `metrics.json` - rolling per-container readiness samples and computed medians.
+- `layout.json` - user-defined groupings and manual order overrides. These win
+  over the computed order (subject to hard-dependency validation).
 - `snapshots/` - timestamped captures of `unraid-autostart` and applied decks,
   for drift comparison and rollback.
+- `backups/` - automatic, rotated backups of the plugin's own config files,
+  taken before any modification, so a bad write or corrupted config is
+  recoverable.
 
 Precedence for resolving the dependency graph: user-declared overrides win over
 detected config, which wins over common-sense heuristics. (Phase 2 community
@@ -127,6 +135,10 @@ Phase 3 connection-watching refines further when opted in.)
   prerequisite with insufficient natural spacing, sized to the prerequisite's
   measured median readiness (rounded up, small margin). Default to 0 when no
   measurement exists, with an optional fallback wait the user can enable.
+- The computed order is a proposal. The user's manual layout (drag-reordering
+  and groupings, stored in `layout.json`) overrides it and persists. Manual
+  changes are validated against hard dependencies; the Doctor warns if a manual
+  order would start a dependent before a hard prerequisite.
 
 ## Doctor rules (initial set)
 
@@ -142,7 +154,14 @@ applied through the backup-first Applier:
 
 ## Apply and safety
 
+- **Atomic writes.** Every file the plugin writes (`unraid-autostart` and its
+  own configs) is written to a temp file in the same directory, fsynced, then
+  atomically renamed into place, so an interrupted write can never leave a
+  truncated or corrupt file.
 - Always snapshot the current `unraid-autostart` to `snapshots/` before writing.
+- **Automatic config backups.** Before modifying any of its own config files,
+  the plugin backs them up to `backups/` (rotated), so a bad write or corruption
+  is recoverable.
 - Propose-and-confirm by default; an optional "auto-apply on drift" toggle.
 - Write only `name [wait]` lines; never comments or unrecognized tokens.
 - The plugin only ever writes ahead of time; it never runs during array start.
@@ -172,6 +191,10 @@ Plugin page sections:
 
 - Current deck, with a live drift indicator.
 - Proposed deck, shown as a diff against current.
+- Manual drag-to-reorder of the deck; the user's arrangement is respected,
+  persisted (`layout.json`), and validated against hard dependencies.
+- User-defined groupings: named groups of containers that can be collapsed and
+  reordered as blocks, for organizing large container sets.
 - Dependencies: detected and user-declared, editable.
 - Measured readiness times per container.
 - Doctor findings with one-click fixes.
