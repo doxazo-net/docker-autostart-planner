@@ -1,0 +1,7 @@
+/vendor/
+/.phpunit.cache/
+.php-cs-fixer.cache
+/dist/
+.DS_Store
+/.idea/
+/.vscode/

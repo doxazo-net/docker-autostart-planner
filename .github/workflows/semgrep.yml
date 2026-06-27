@@ -1,0 +1,36 @@
+name: Semgrep
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "23 4 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      # Public rulesets are fetched anonymously; no token required.
+      # pipx + python are preinstalled on ubuntu-latest.
+      - name: Install Semgrep
+        run: pipx install semgrep
+      - name: Semgrep SAST (PHP + security-audit)
+        # Fails the job on any finding. Tune via .semgrepignore if FPs appear.
+        # When the repo goes public, add --sarif output + upload-sarif to post
+        # findings to the Security tab (needs public repo or GHAS).
+        run: semgrep scan --config p/php --config p/security-audit --error

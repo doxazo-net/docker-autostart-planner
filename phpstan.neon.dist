@@ -1,0 +1,9 @@
+parameters:
+    # Level 6 adds missing-type-hint enforcement on top of the core null/type
+    # safety levels. Raise toward 8-9 as the code matures.
+    level: 6
+    paths:
+        - src
+        - tests
+    # Plan B adds the Unraid plugin pages (PHP with the .page extension);
+    # add `page` to fileExtensions and `plugin` to paths when that lands.

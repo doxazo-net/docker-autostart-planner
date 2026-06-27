@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#
+# pre-push: run the test suite before pushing.
+# Skip once with: git push --no-verify  (use sparingly)
+
+set -euo pipefail
+
+if [ ! -x vendor/bin/phpunit ]; then
+    echo "phpunit missing - run 'make install' (skipping pre-push tests)"
+    exit 0
+fi
+
+vendor/bin/phpunit || { echo "tests failed - push aborted" >&2; exit 1; }

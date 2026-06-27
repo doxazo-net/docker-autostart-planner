@@ -1,0 +1,34 @@
+{
+    "name": "sydlexius/docker-autostart-planner",
+    "description": "Advisory Unraid plugin that computes an optimal Docker autostart order and delays (core engine + settings UI)",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.64",
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^10"
+    },
+    "autoload": {
+        "psr-4": {
+            "DockerAutostartPlanner\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "DockerAutostartPlanner\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "lint": "phpstan analyse --no-progress",
+        "check": "php-cs-fixer fix --dry-run --diff",
+        "fix": "php-cs-fixer fix"
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    }
+}

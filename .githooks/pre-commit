@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+#
+# pre-commit: fast PHP checks before a commit is recorded.
+#   1. PHP-CS-Fixer (style, dry-run)
+#   2. PHPStan (static analysis)
+#
+# Enable with: make hooks   (sets core.hooksPath to .githooks)
+# Skip once with: git commit --no-verify  (use sparingly)
+
+set -euo pipefail
+
+if [ -t 1 ]; then
+    RED='\033[0;31m'; GREEN='\033[0;32m'; BOLD='\033[1m'; RESET='\033[0m'
+else
+    RED=''; GREEN=''; BOLD=''; RESET=''
+fi
+fail() { echo -e "${RED}${BOLD}FAIL${RESET} $1" >&2; exit 1; }
+pass() { echo -e "${GREEN}PASS${RESET} $1"; }
+
+if [ ! -x vendor/bin/php-cs-fixer ] || [ ! -x vendor/bin/phpstan ]; then
+    echo "dev deps missing - run 'make install' (skipping pre-commit checks)"
+    exit 0
+fi
+
+vendor/bin/php-cs-fixer fix --dry-run --diff >/tmp/dap-csfixer.log 2>&1 || {
+    cat /tmp/dap-csfixer.log >&2
+    fail "php-cs-fixer (run 'make fix')"
+}
+pass "php-cs-fixer"
+
+vendor/bin/phpstan analyse --no-progress || fail "phpstan"
+pass "phpstan"
+
+echo -e "${GREEN}${BOLD}pre-commit checks passed.${RESET}"
